@@ -11,21 +11,28 @@ Welcome to the **HSK1 Anki Template**! This Note Type is specially designed for 
 * 🔊 **Audio & Pronunciation:** Scientifically arranged audio buttons (Pinyin, Meaning, Example Sentence) for easy interaction.
 
 ## 📸 Screenshots
+Card 1: Multiple Choices - Front & Back template
 
-*(Note: Upload your image files to the `screenshots` folder and update the paths below)*
+<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/029eabc2-0f4e-45bd-b28a-1a67ff0ca505" /> *Front interface featuring the multiple-choice question.*
 
-![Front of Card](./screenshots/front-preview.png)
-*Front interface featuring the multiple-choice question.*
+<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/dbf9efe5-7f21-4c8f-a4c8-f79adc2e095b" /> *Back interface with detailed meanings and expanded examples.*
 
-![Back of Card](./screenshots/back-preview.png)
-*Back interface with detailed meanings and expanded examples.*
+Card 2: Typing Cards - Front & Back template
+
+<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/f1b6709a-1032-48a6-a6fe-5bae729b4faa" />
+<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/a96134e7-ec71-453e-b151-f01f3ac6868d" />
+
+Card 3: Hanzi Writing - Front & Back template
+
+<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/ac3e91d9-20f3-46f3-9f33-5cad5a160bfe" />
+<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/d9de298c-a58c-4d4f-b03b-8e2037cf9646" />
 
 ## 🚀 Installation Guide
 
 To use this template, follow these steps within the Anki app:
 
 1. Open Anki, go to **Tools** > **Manage Note Types**.
-2. Click **Add** > **Clone: Basic** and name it `HSK1 Soft UI`.
+2. Click **Add** > **Clone: Basic** and name it `HSK1_Template 3 CARDS`.
 3. Select your newly created Note Type and click **Cards...**.
 4. In the styling window:
    * Copy the content of the `Front.html` file from this repository and paste it into the **Front Template** box.
