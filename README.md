@@ -13,9 +13,11 @@ Welcome to the **HSK1 Anki Template**! This Note Type is specially designed for 
 ## 📸 Screenshots
 Card 1: Multiple Choices - Front & Back template
 
-<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/029eabc2-0f4e-45bd-b28a-1a67ff0ca505" /> *Front interface featuring the multiple-choice question.*
+<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/029eabc2-0f4e-45bd-b28a-1a67ff0ca505" /> 
+*Front interface featuring the multiple-choice question.*
 
-<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/dbf9efe5-7f21-4c8f-a4c8-f79adc2e095b" /> *Back interface with detailed meanings and expanded examples.*
+<img width="516" height="584" alt="image" src="https://github.com/user-attachments/assets/dbf9efe5-7f21-4c8f-a4c8-f79adc2e095b" /> 
+*Back interface with detailed meanings and expanded examples.*
 
 Card 2: Typing Cards - Front & Back template
 
@@ -42,6 +44,26 @@ To use this template, follow these steps within the Anki app:
 
 > **Note:** Make sure you have created all the corresponding Fields (e.g., Hanzi, Pinyin, Meaning, Audio, etc.) in the **Fields...** menu of your Note Type to match the HTML code.
 
+## 📝 Guide to Importing Data from Excel (.xlsx / .csv)
+
+To bulk-add vocabulary to this template, you can use Anki's Import feature.
+
+**Step 1: Prepare your data file**
+* Open your Excel file and ensure the data columns are arranged to match the Fields in the Note Type (e.g., Column A is Hanzi, Column B is Pinyin, Column C is Meaning...).
+* **Important Tip:** To avoid parsing errors, it is highly recommended to `Save As` your Excel file as **CSV UTF-8 (Comma delimited) (*.csv)** or **Text (Tab delimited) (*.txt)**.
+
+**Step 2: Import into Anki**
+1. Open Anki and click on **File** > **Import...**.
+2. Select the `.xlsx`, `.csv`, or `.txt` file you just saved.
+3. A configuration window will appear. Pay special attention to the following settings:
+   * **Type:** You must select the exact Note Type you created for this template (e.g., `HSK1 Soft UI`).
+   * **Deck:** Choose the deck where you want to save your new cards.
+   * **Field mapping:** Carefully verify that the columns from your file match the corresponding fields in Anki (e.g., ensure `Field 1` maps correctly to `Column 1`).
+
+**⚠️ Common Issue: Column Mismatch Error**
+If you encounter an error message like: `Exception: Found 19 fields but 18 field types`, it means your import file contains more columns than the number of fields configured in your Anki Note Type. 
+* **How to fix:** Highlight and completely delete any seemingly empty columns at the far right of your Excel file. Alternatively, if you are using a standard CSV, check if any of your text cells contain stray commas (`,`), which might cause Anki to mistakenly split that text into a new column.
+* 
 ## 🤝 Contributing
 This project was created to share with and help the Chinese learning community. If you have ideas to improve the interface or optimize the code, feel free to open a Pull Request or submit an Issue!
 
