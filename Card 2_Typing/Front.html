@@ -1,0 +1,63 @@
+<div class="Deck" style="display:none;"><span id="Deck">{{Deck}}</span></div>
+<script>
+  (function(){
+    var el = document.getElementById("Deck");
+    if (el) el.innerHTML = "{{Deck}}".replace("::"," &minus; ");
+  })();
+</script>
+
+<div id="Container">
+  <div id="card">
+
+    <div class="nghia hsk-vi-prompt">
+      {{example_translated}}
+
+      {{#example_en}}
+      <div class="space"></div>
+      <button class="btn-show-en-example" id="btnEnExample" onclick="toggleExampleEn()">
+        <span class="btn-text">Tiếng Anh</span>
+        <span class="example-content">{{example_en}}</span>
+      </button>
+      {{/example_en}}
+   
+    </div>
+
+    <div class="space"></div>
+
+    <div class="hsk-type-box">
+      {{type:example}}
+    </div>
+
+    {{#audio_example}}
+    <div class="space"></div>
+    <button class="btn-play1 hsk-audio-btn" onclick="playFrom('exAudio')">
+      🔊 Nghe câu gợi ý
+    </button>
+    <div id="exAudio" style="display:none">{{audio_example}}</div>
+    {{/audio_example}}
+
+  </div>
+</div>
+
+<script>
+// Hàm phát âm thanh
+function playFrom(id){
+  var el = document.getElementById(id);
+  if (!el) return;
+  var clickable = el.querySelector(".soundLink, .replaybutton, audio, a");
+  if (clickable){
+    if (clickable.tagName === "AUDIO") clickable.play();
+    else clickable.click();
+  }
+}
+
+// Hàm đổi trạng thái nút Tiếng Anh (Click để mở rộng)
+function toggleExampleEn() {
+    var btn = document.getElementById('btnEnExample');
+    if (btn && !btn.classList.contains('clicked')) {
+        btn.classList.add('clicked');
+    }
+}
+</script>
+
+<script role='smarterTypeField' src="_smarterTypeField.min2026-02-26_18-18-38.js" data-config="2026-03-28_01-39-10"></script>

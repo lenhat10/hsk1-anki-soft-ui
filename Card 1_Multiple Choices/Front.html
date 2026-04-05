@@ -1,0 +1,287 @@
+<style>
+  .hsk-header {
+    font-family: STSong, serif;
+    font-size: 18px;
+    color: #888;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  /* Tùy chỉnh đáp án: Căn trái, không in đậm */
+  #C .options {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    font-weight: normal !important; 
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.9);
+    border: 2px solid rgba(0,0,0,0.12);
+  }
+  #C .options .opt-py {
+    font-size: 16px;
+    color: #505fa2;
+    margin-bottom: 2px;
+    font-family: STSong, sans-serif;
+  }
+  #C .options .opt-hz {
+    font-size: 30px;
+    font-weight: normal !important; 
+    color: #132028;
+    font-family: STSong, sans-serif;
+
+  }
+  
+  /* Tùy chỉnh 4 nút xanh */
+  .modal-footer1 { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+  .action-btn {
+    background-color: #799a82; 
+    border: none;
+    width: 50px; height: 50px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+  .action-btn:active { transform: scale(0.92); }
+  
+  /* SỬA LỖI IN NGHIÊNG ICON TẠI ĐÂY */
+  .action-btn .material-icons { 
+    color: #ffffff; 
+    font-size: 24px; 
+    font-style: normal !important; 
+  }
+</style>
+
+<div id="hData-word" style="display:none;">{{word}}</div>
+<div id="hData-pinyin" style="display:none;">{{pinyin}}</div>
+<div id="hData-wrongs" style="display:none;">{{wrong_choices}}</div>
+
+
+<div id="Container">
+  <div id="card">
+
+    <div id="Q-E">
+      <div id="Q">
+        <div id="qText">{{question}}</div>
+        <div id="qAudio" style="display:none;">{{audio_en_example}}</div>
+      </div>
+
+      <div id="E" style="display:none;">
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+        <div class="bothu">{{pinyin}}</div>
+        <div class="space"></div>
+        <div class="nghia">{{vi_meaning}}</div>
+      </div>
+    </div>
+
+    <div id="mcqTimer" class="mcq-timer">⏱ 45s</div>
+    <div id="mcqResult" class="mcq-result" style="display:none;"></div>
+
+    <div id="C"></div>
+
+    <div class="modal-footer1">
+      <button class="action-btn" id="btnHint" title="Gợi ý"><i class="material-icons">visibility</i></button>
+      <button class="action-btn" id="btnPlay" title="Nghe câu hỏi"><i class="material-icons">volume_up</i></button>
+      <button class="action-btn" id="btnShuffle" title="Trộn đáp án"><i class="material-icons">shuffle</i></button>
+      <button class="action-btn" id="btnReset" title="Làm lại"><i class="material-icons">refresh</i></button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---------- Helpers ----------
+  function plainText(html){ return (html || "").replace(/<[^>]*>/g, " ").trim(); }
+  function splitChoices(html){
+    var t = plainText(html);
+    if (!t) return [];
+    return t.split(/[,|]/).map(s => s.trim()).filter(Boolean);
+  }
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  
+  // Trích xuất Pinyin và Hanzi tự động
+  function parseChoice(str, defaultPy) {
+    var t = str.trim();
+    var hzMatch = t.match(/[\u3400-\u9FFF\uF900-\uFAFF]+/g);
+    if (!hzMatch) return { py: defaultPy || "", hz: t };
+    var hz = hzMatch.join("");
+    var py = t.replace(/[\u3400-\u9FFF\uF900-\uFAFF]+/g, "").trim();
+    return { py: py || defaultPy || "", hz: hz };
+  }
+
+  // ---------- Lấy Data an toàn từ Hidden Divs ----------
+  var correctHz = plainText(document.getElementById("hData-word").innerHTML);
+  var correctPy = plainText(document.getElementById("hData-pinyin").innerHTML);
+  var correctOpt = { py: correctPy, hz: correctHz };
+
+  var rawWrongsText = document.getElementById("hData-wrongs").innerHTML;
+  var rawWrongs = splitChoices(rawWrongsText);
+  var wrongs = rawWrongs.map(w => parseChoice(w, ""));
+  
+  // Lọc trùng
+  wrongs = wrongs.filter(w => w.hz !== correctHz);
+  var seen = new Set();
+  wrongs = wrongs.filter(w => {
+      if(seen.has(w.hz)) return false;
+      seen.add(w.hz); return true;
+  });
+
+  // ---------- DOM ----------
+  var C = document.getElementById("C");
+  var E = document.getElementById("E");
+  var qAudioWrap = document.getElementById("qAudio");
+
+  var btnHint = document.getElementById("btnHint");
+  var btnPlay = document.getElementById("btnPlay");
+  var btnShuffle = document.getElementById("btnShuffle");
+  var btnReset = document.getElementById("btnReset");
+
+  var timerEl = document.getElementById("mcqTimer");
+  var resultEl = document.getElementById("mcqResult");
+
+  var hintVisible = false;
+  function setHintVisible(v){
+    hintVisible = !!v;
+    if (E) E.style.display = hintVisible ? "block" : "none";
+  }
+  if (btnHint) btnHint.onclick = function(e){ e.preventDefault(); setHintVisible(!hintVisible); };
+
+  function pickFourOptions(){
+    var base = [correctOpt];
+    for (var i=0; i<wrongs.length && base.length < 4; i++){ base.push(wrongs[i]); }
+    while (base.length < 4) base.push({py:"", hz:"—"});
+    return shuffle(base).slice(0,4);
+  }
+
+  // ---------- State ----------
+  var locked = false;
+  var wrongCount = 0;
+  var timerTotal = 45;
+  var remain = timerTotal;
+  var startMs = 0;
+  var tHandle = null;
+
+  function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+  function elapsedSeconds(){ return clamp(Math.round((Date.now() - startMs) / 1000), 0, timerTotal); }
+
+  function showResult(ok, msg){
+    if (!resultEl) return;
+    resultEl.style.display = "block";
+    resultEl.className = "mcq-result " + (ok ? "ok" : "bad");
+    resultEl.textContent = msg;
+  }
+  function clearResult(){
+    if (!resultEl) return;
+    resultEl.style.display = "none";
+    resultEl.textContent = "";
+    resultEl.className = "mcq-result";
+  }
+
+  function setTimerText(){
+    if (!timerEl) return;
+    timerEl.textContent = "⏱ " + remain + "s";
+    timerEl.className = "mcq-timer";
+    if (remain <= 15 && remain > 5) timerEl.classList.add("warn");
+    if (remain <= 5) timerEl.classList.add("danger");
+  }
+
+  function stopTimer(){ if (tHandle){ clearInterval(tHandle); tHandle = null; } }
+
+  function startTimer(){
+    stopTimer(); remain = timerTotal; startMs = Date.now(); setTimerText();
+    tHandle = setInterval(function(){
+      remain--; setTimerText();
+      if (remain <= 0){
+        stopTimer();
+        if (!locked){
+          wrongCount++;
+          showResult(false, "⏳ Hết giờ (sai lần " + wrongCount + ")");
+          if (wrongCount >= 2) revealAll(false, true);
+          else locked = false;
+        }
+      }
+    }, 1000);
+  }
+
+  function markAllCorrectWrong(){
+    var nodes = C.querySelectorAll(".options");
+    nodes.forEach(function(node){
+      var v = node.getAttribute("data-value");
+      if (v === correctHz) node.classList.add("right");
+      else node.classList.add("wrong");
+    });
+  }
+
+  function revealAll(showCongrats, fromTimeoutOr2ndWrong){
+    locked = true; stopTimer(); markAllCorrectWrong(); setHintVisible(true);
+    if (showCongrats) showResult(true, "🎉 Chính xác! (" + elapsedSeconds() + "s)");
+    else if (fromTimeoutOr2ndWrong) showResult(false, "✅ Đã hiện đáp án đúng");
+  }
+
+  function renderChoices(){
+    locked = false; wrongCount = 0; setHintVisible(false); clearResult();
+    C.innerHTML = "";
+    var options = pickFourOptions();
+
+    options.forEach(function(optData){
+      var opt = document.createElement("div");
+      opt.className = "options";
+      opt.setAttribute("data-value", optData.hz);
+
+      var pyDiv = document.createElement("div");
+      pyDiv.className = "opt-py";
+      pyDiv.textContent = optData.py;
+
+      var hzDiv = document.createElement("div");
+      hzDiv.className = "opt-hz";
+      hzDiv.textContent = optData.hz;
+
+      // Render Pinyin nếu có, luôn render Hanzi
+      if(optData.py !== "") opt.appendChild(pyDiv);
+      opt.appendChild(hzDiv);
+
+      opt.addEventListener("click", function(ev){ onChoose(ev.currentTarget); });
+      C.appendChild(opt);
+    });
+    startTimer();
+  }
+
+  function onChoose(node){
+    if (locked) return;
+    var v = node.getAttribute("data-value");
+    if (v === "—") return;
+
+    if (v === correctHz){ revealAll(true, false); return; }
+
+    wrongCount++; node.classList.add("wrong");
+    showResult(false, "❌ Sai lần " + wrongCount);
+    if (wrongCount >= 2) revealAll(false, true);
+  }
+
+  if (btnPlay) btnPlay.onclick = function(e){
+    e.preventDefault();
+    var clickable = qAudioWrap.querySelector(".soundLink, .replaybutton, audio, a, *");
+    if (clickable){
+      if (clickable.tagName === "AUDIO") clickable.play();
+      else clickable.click();
+    }
+  };
+
+  if (btnShuffle) btnShuffle.onclick = function(e){ e.preventDefault(); renderChoices(); };
+  if (btnReset) btnReset.onclick = function(e){ e.preventDefault(); renderChoices(); };
+
+  renderChoices();
+})();
+</script>

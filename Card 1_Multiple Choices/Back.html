@@ -1,0 +1,62 @@
+<div class="hsk-header">
+</div>
+
+<div id="Container">
+  <div id="card">
+
+    <div id="Q-E" style="margin-bottom: 15px; background: var(--panel-strong); border-radius: 16px; padding: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.08);">
+      <div id="Q" style="font-size: 24px; font-weight: 800; color: #132028; margin-bottom: 10px;">{{question}}</div>
+      <div style="color: #505fa2; font-size: 16px; margin-bottom: 4px;">{{example_pinyin}}</div>
+      <div style="color: #2c3e50; font-style: italic;">{{example_translated}}</div>
+      <div style="color: #666; font-size: 14px; margin-top: 4px;">{{example_en}}</div>
+    </div>
+
+
+    <div class="word-chip">
+      <div class="mini-now">
+        <span class="mini-pill">{{word}}</span>
+      </div>
+    </div>
+    <div class="pinyin space">{{pinyin}}</div>
+    <div class="audio-row space">
+      {{#audio_word}}
+        <button class="btn-play1" type="button" onclick="playAudioFromField('wordAudio')">🔊 Word</button>
+        <span id="wordAudio" style="display:none;">{{audio_word}}</span>
+      {{/audio_word}}
+      
+      {{#audio_example}}
+        <button class="btn-play-de" type="button" onclick="playAudioFromField('exAudio')">🔊 Example</button>
+        <span id="exAudio" style="display:none;">{{audio_example}}</span>
+      {{/audio_example}}
+
+    <div class="nghia space" style="width: min(700px, 92%); text-align: left;">
+      <div class="info-grid">
+        {{#vi_meaning}}<div><b>Nghĩa:</b> {{vi_meaning}}</div>{{/vi_meaning}}
+        {{#en_meaning}}<div><b>English:</b> {{en_meaning}}</div>{{/en_meaning}}
+        {{#pos}}<div><b>Loại từ:</b> {{pos}}</div>{{/pos}}
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<script>
+  window.playAudioFromField = function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var clickable = el.querySelector(".soundLink, .replaybutton, audio, a");
+    if (clickable) {
+      if (clickable.tagName === "AUDIO") clickable.play();
+      else clickable.click();
+      return;
+    }
+    var any = el.querySelector("*");
+    if (any) any.click();
+  };
+
+  // LỆNH TỰ ĐỘNG PHÁT AUDIO_EXAMPLE SAU KHI LẬT THẺ
+  setTimeout(function() {
+    playAudioFromField('exAudio');
+  }, 150);
+</script>

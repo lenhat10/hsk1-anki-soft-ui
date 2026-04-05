@@ -1,0 +1,269 @@
+<style>
+  .hsk-header {
+    font-family: Cambria, serif;
+    font-size: 13px;
+    color: #888;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  /* Tùy chỉnh đồng bộ nút xanh cho mặt sau */
+  .demo-btn, .btn-play1, .btn-play-de {
+    background-color: #799a82 !important; 
+    color: white !important; 
+    border: none !important; 
+    padding: 10px 18px !important; 
+    border-radius: 12px !important; 
+    cursor: pointer; 
+    font-weight: bold; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+    transition: transform 0.1s !important;
+  }
+  .demo-btn:active, .btn-play1:active, .btn-play-de:active {
+    transform: scale(0.92) !important;
+  }
+</style>
+
+
+<div id="Container">
+  <div id="card">
+
+    <div class="word-chip">
+      <span class="mini-now" id="miniNowBack"></span>
+    </div>
+
+    <div id="demo-target"></div>
+
+      <div class="demo-footer">
+        <button class="demo-btn" type="button" id="btnDemoPlay">▶ Nét</button>
+        <button class="demo-btn" type="button" id="btnDemoLoop">↻ Lặp: ON</button>
+        <button class="demo-btn" type="button" id="btnDemoNext">⏭ Char</button>
+      </div>
+
+      <div class="demo-note" id="demoNote" style="display:none;"></div>
+
+    <div class="nghia">
+      {{#vi_meaning}}<div><b>Nghĩa:</b> {{vi_meaning}}</div>{{/vi_meaning}}
+      {{#en_meaning}}<div><b>English:</b> {{en_meaning}}</div>{{/en_meaning}}
+      {{#pos}}<div><b>Từ loại:</b> {{pos}}</div>{{/pos}}
+    </div>
+
+    {{#explain}}
+      <div class="bothu"><b>Giải thích:</b> {{explain}}</div>
+    {{/explain}}
+
+    <div class="audio-row">
+      {{#audio_word}}
+        <button class="btn-play1" type="button" onclick="playAudioFromField('wordAudio')">🔊 Word</button>
+        <span id="wordAudio" style="display:none;">{{audio_word}}</span>
+      {{/audio_word}}
+
+      {{#audio_example}}
+        <button class="btn-play-de" type="button" onclick="playAudioFromField('exAudio')">🔊 Example</button>
+        <span id="exAudio" style="display:none;">{{audio_example}}</span>
+      {{/audio_example}}
+    </div>
+
+    {{#example}}
+      <div class="example">
+        <div><b>Example:</b> {{example}}</div>
+        {{#example_pinyin}}<div style="margin-top:4px;"><b>Pinyin:</b> {{example_pinyin}}</div>{{/example_pinyin}}
+        {{#example_translated}}<div style="margin-top:4px;"><b>VI:</b> {{example_translated}}</div>{{/example_translated}}
+        {{#example_en}}<div style="margin-top:4px;"><b>EN:</b> {{example_en}}</div>{{/example_en}}
+      </div>
+    {{/example}}
+
+  </div>
+</div>
+
+<style>
+  /* layout nhẹ cho preview demo, không phá CSS chung */
+  #demo-character-target-div{
+    width: min(700px, 92%);
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 18px;
+    padding: 10px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.10);
+  }
+  #demo-target{ display:flex; justify-content:center; }
+  .demo-footer{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top: 8px;
+  }
+  .demo-note{
+    margin-top: 6px;
+    font-size: 14px;
+    opacity: 0.75;
+    text-align:center;
+  }
+
+  .audio-row{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin: 10px 0; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+
+<script>
+  // ===== Audio helper =====
+  window.playAudioFromField = function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var clickable = el.querySelector(".soundLink, .replaybutton, audio, a");
+    if (clickable) {
+      if (clickable.tagName === "AUDIO") clickable.play();
+      else clickable.click();
+      return;
+    }
+    var any = el.querySelector("*");
+    if (any) any.click();
+  };
+
+(function(){
+  function strip(html){ return (html||"").replace(/<[^>]*>/g,"").replace(/\s+/g," ").trim(); }
+
+  // ===== Mini pills =====
+  (function(){
+    var raw = `{{word}}` || "";
+    var chars = strip(raw).replace(/[^\u3400-\u9FFF\uF900-\uFAFF]/g,"");
+    var host = document.getElementById("miniNowBack");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!chars) return;
+    for (var i=0;i<chars.length;i++){
+      var sp = document.createElement("span");
+      sp.className = "mini-pill";
+      sp.textContent = chars[i];
+      host.appendChild(sp);
+    }
+  })();
+
+  // ===== Demo stroke order (animate) =====
+  var raw = `{{word}}` || "";
+  var chars = strip(raw).replace(/[^\u3400-\u9FFF\uF900-\uFAFF]/g,"");
+  if (!chars) chars = strip(raw);
+
+  var note = document.getElementById("demoNote");
+  var host = document.getElementById("demo-target");
+
+  if (!host || !chars){
+    if (note){ note.style.display="block"; note.textContent="(Không có chữ để preview)"; }
+    return;
+  }
+
+  // size responsive
+  function computeSize(){
+    var c = document.getElementById("Container");
+    var w = (c && c.clientWidth) ? c.clientWidth : (window.innerWidth||360);
+    var usable = Math.max(240, w - 72);
+    return Math.max(180, Math.min(320, Math.floor(usable)));
+  }
+  var size = computeSize();
+  var strokeWidth = Math.max(5, Math.min(14, Math.round(size/45)));
+
+  // render svg grid
+  function renderGrid(){
+    host.innerHTML =
+      "<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%' class='grid-color' id='demo-grid'>" +
+        "<g>" +
+          "<line x1='0' y1='0' x2='100%' y2='100%' stroke='rgba(0,0,0,0.10)' />" +
+          "<line x1='100%' y1='0' x2='0' y2='100%' stroke='rgba(0,0,0,0.10)' />" +
+          "<line x1='50%' y1='0' x2='50%' y2='100%' stroke='rgba(0,0,0,0.10)' />" +
+          "<line x1='0' y1='50%' x2='100%' y2='50%' stroke='rgba(0,0,0,0.10)' />" +
+        "</g>" +
+      "</svg>";
+    var svg = document.getElementById("demo-grid");
+    if (svg){
+      svg.style.width = size + "px";
+      svg.style.height = size + "px";
+    }
+  }
+
+  var idx = 0;
+  var writer = null;
+  var loopOn = true;
+  var loopHandle = null;
+
+  function clearLoop(){
+    if (loopHandle){ clearTimeout(loopHandle); loopHandle = null; }
+  }
+
+  function makeWriter(){
+    renderGrid();
+
+    // night mode
+    var stroke = "#555", outline="#DDD";
+    if (document.body.classList.contains("night_mode") || document.querySelector(".card.night_mode")){
+      stroke = "#fff"; outline="#5B5B5B";
+    }
+
+    writer = HanziWriter.create("demo-grid", chars[idx], {
+      width: size,
+      height: size,
+      padding: 5,
+      showCharacter: false,
+      showOutline: true,
+      strokeColor: stroke,
+      outlineColor: outline,
+      drawingColor: stroke,
+      drawingWidth: strokeWidth
+    });
+
+    if (note){
+      note.style.display="block";
+      note.textContent = "Preview nét: " + (chars[idx] || "");
+    }
+  }
+
+  function playOnce(){
+    if (!writer) return;
+    clearLoop();
+    writer.hideCharacter();
+    writer.animateCharacter({
+      onComplete: function(){
+        if (!loopOn) return;
+        loopHandle = setTimeout(function(){
+          nextCharAuto();
+        }, 500);
+      }
+    });
+  }
+
+  function nextCharAuto(){
+    idx = (idx + 1) % chars.length;
+    makeWriter();
+    playOnce();
+  }
+
+  function nextCharManual(){
+    idx = (idx + 1) % chars.length;
+    makeWriter();
+    playOnce();
+  }
+
+  // Buttons
+  var btnPlay = document.getElementById("btnDemoPlay");
+  var btnLoop = document.getElementById("btnDemoLoop");
+  var btnNext = document.getElementById("btnDemoNext");
+
+  if (btnPlay) btnPlay.onclick = function(){ playOnce(); };
+  if (btnNext) btnNext.onclick = function(){ nextCharManual(); };
+
+  if (btnLoop) btnLoop.onclick = function(){
+    loopOn = !loopOn;
+    btnLoop.textContent = loopOn ? "↻ Lặp: ON" : "↻ Lặp: OFF";
+    if (loopOn) playOnce();
+    else clearLoop();
+  };
+
+  // Init
+  makeWriter();
+  playOnce();
+
+})();
+</script>

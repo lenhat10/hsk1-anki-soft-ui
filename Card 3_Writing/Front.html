@@ -1,0 +1,363 @@
+<style>
+  .hsk-header {
+    font-family: Cambria, serif;
+    font-size: 13px;
+    color: #888;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .modal-footer1 { display: flex; justify-content: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  
+  .action-btn {
+    background-color: #799a82; 
+    border: none;
+    width: 50px; height: 50px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: transform 0.1s;
+    position: relative; 
+  }
+  .action-btn:active { transform: scale(0.92); }
+  
+  .action-btn .material-icons { 
+    color: #ffffff; 
+    font-size: 24px; 
+    font-style: normal !important; 
+    transition: color 0.2s;
+  }
+  .action-btn .is-on { color: #fdfd96; } 
+
+  .action-btn .tiptext {
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.25;
+    white-space: normal;
+    width: max-content;
+    max-width: 250px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 100;
+  }
+  .action-btn:hover .tiptext { opacity: 1; }
+</style>
+
+<div id="Container">
+  <div id="card">
+
+    {{#audio_word}}
+      <div style="display:none;">{{audio_word}}</div>
+    {{/audio_word}}
+
+    <div class="word-chip" id="wordChip">
+      <span class="mini-now" id="miniNow"></span>
+    </div>
+
+    {{#vi_meaning}}
+      <div class="meaning-reveal" id="meaningReveal">{{vi_meaning}}</div>
+    {{/vi_meaning}}
+
+    {{#pinyin}}
+      <div class="pinyin space">{{pinyin}}</div>
+    {{/pinyin}}
+
+    <div id="ch_load_status" style="color:#ea2322; margin-top:-10px; display:none;">&#8226;</div>
+
+    <div id="character-target-div" class="tappable"></div>
+
+    <div class="modal-footer1">
+
+      <button class="action-btn" id="btnToggleMeaning" title="Gợi ý Nghĩa">
+        <i class="material-icons" id="meaningTipHost">visibility</i>
+        <span class="tiptext" id="meaningTipText"></span>
+      </button>
+
+      <button class="action-btn" id="btnRevealChar" title="Gợi ý nét / hiện chữ">
+        <i class="material-icons">gesture</i>
+      </button>
+
+      <button class="action-btn" id="btnToggleOutline" title="Bật/Tắt Outline">
+        <i class="material-icons" id="outlineIcon">border_outer</i>
+      </button>
+
+      <button class="action-btn" id="btnReloadQuiz" title="Làm lại">
+        <i class="material-icons">replay</i>
+      </button>
+
+      <button class="action-btn" id="btnGoNextCard" title="Bỏ qua / sang chữ tiếp theo">
+        <i class="material-icons">navigate_next</i>
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+
+<script>
+(function () {
+  function plainText(html) {
+    return (html || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  // ===== Colors =====
+  var stroke_color = "#555";
+  var outline_color = "#DDD";
+  var drawing_color = "#333";
+  if (document.body.classList.contains("night_mode") || document.querySelector(".card.night_mode")) {
+    stroke_color = "#ffffff";
+    outline_color = "#5B5B5B";
+    drawing_color = "#fff";
+  }
+
+  // ===== Settings =====
+  var padding = 5;
+  var hintMiss = 3;
+
+  // Word -> CJK only
+  var rawWord = `{{word}}`;
+  var wordText = plainText(rawWord);
+  var mainDiv = document.getElementById("character-target-div");
+  if (!wordText) {
+    if (mainDiv) mainDiv.innerHTML = "<div class='hint'>⚠️ Missing field: word</div>";
+    return;
+  }
+  var characters = wordText.replace(/[^\u3400-\u9FFF\uF900-\uFAFF]/g, "");
+  if (!characters) characters = wordText;
+
+  // ===== DOM =====
+  var dot = document.getElementById("ch_load_status");
+
+  var btnReload = document.getElementById("btnReloadQuiz");
+  var btnReveal = document.getElementById("btnRevealChar");
+  var btnNext   = document.getElementById("btnGoNextCard");
+
+  var btnToggleOutline = document.getElementById("btnToggleOutline");
+  var outlineIcon = document.getElementById("outlineIcon");
+
+  var btnToggleMeaning = document.getElementById("btnToggleMeaning");
+  var meaningReveal = document.getElementById("meaningReveal");
+
+  var miniNow = document.getElementById("miniNow");
+
+  var tipHost = document.getElementById("meaningTipHost");
+  var tipText = document.getElementById("meaningTipText");
+
+  // ===== Mini pills =====
+  (function(){
+    if (!miniNow) return;
+    miniNow.innerHTML = "";
+    for (var i=0;i<characters.length;i++){
+      var sp = document.createElement("span");
+      sp.className = "mini-pill";
+      sp.textContent = characters[i];
+      miniNow.appendChild(sp);
+    }
+  })();
+
+  // ===== Meaning toggle + tooltip =====
+  var MEANING_VISIBLE_KEY = "cn_write_meaning_visible";
+  var meaningVisible = false;
+  try {
+    var st = localStorage.getItem(MEANING_VISIBLE_KEY);
+    if (st !== null) meaningVisible = (st === "true");
+  } catch(e){}
+
+  function setMeaningVisible(v){
+    meaningVisible = !!v;
+    try { localStorage.setItem(MEANING_VISIBLE_KEY, meaningVisible.toString()); } catch(e){}
+    if (meaningReveal) meaningReveal.style.display = meaningVisible ? "block" : "none";
+    if (tipHost) tipHost.classList.toggle("is-on", meaningVisible);
+  }
+
+  (function(){
+    if (!tipHost || !tipText) return;
+    var meaningStr = meaningReveal ? plainText(meaningReveal.innerHTML) : "";
+    tipText.textContent = meaningStr ? ("Nghĩa: " + meaningStr) : "Không có nghĩa";
+    tipHost.parentNode.addEventListener("touchstart", function(){
+      tipText.style.opacity = "1";
+      clearTimeout(window.__tipTO);
+      window.__tipTO = setTimeout(function(){ tipText.style.opacity = "0"; }, 1200);
+    }, {passive:true});
+  })();
+
+  if (btnToggleMeaning){
+    btnToggleMeaning.onclick = function(e){
+      e.preventDefault();
+      setMeaningVisible(!meaningVisible);
+    };
+  }
+  setMeaningVisible(meaningVisible);
+
+  // ===== Outline toggle (persist) =====
+  var OUTLINE_KEY = "cn_write_outline_enabled";
+  var outlineEnabled = true;
+  try {
+    var store = localStorage.getItem(OUTLINE_KEY);
+    if (store !== null) outlineEnabled = (store === "true");
+  } catch(e){}
+
+  function setOutlineBtnUI(){
+    if (!outlineIcon) return;
+    outlineIcon.classList.toggle("is-on", outlineEnabled);
+  }
+  function setOutlineEnabled(v){
+    outlineEnabled = !!v;
+    try { localStorage.setItem(OUTLINE_KEY, outlineEnabled.toString()); } catch(e){}
+    setOutlineBtnUI();
+    if (writer){
+      if (outlineEnabled) writer.showOutline();
+      else writer.hideOutline();
+    }
+  }
+  if (btnToggleOutline){
+    btnToggleOutline.onclick = function(e){
+      e.preventDefault();
+      setOutlineEnabled(!outlineEnabled);
+    };
+  }
+  setOutlineBtnUI();
+
+  function setStatusDot(show, ok){
+    if (!dot) return;
+    dot.style.display = show ? "block" : "none";
+    dot.style.color = ok ? "#4caf50" : "#ea2322";
+  }
+
+  function computeCharSize(){
+    var container = document.getElementById("Container");
+    var w = (container && container.clientWidth) ? container.clientWidth : (window.innerWidth || 360);
+    var usable = Math.max(260, w - 56);
+    return Math.max(180, Math.min(360, Math.floor(usable)));
+  }
+
+  var charSize = computeCharSize();
+  var strokeWidth = Math.max(5, Math.min(14, Math.round(charSize / 45)));
+
+  function renderMainGrid(){
+    if (!mainDiv) return;
+    mainDiv.innerHTML =
+      "<svg xmlns='http://www.w3.org/2000/svg' class='grid-color' id='main-grid'>" +
+        "<g>" +
+          "<line x1='0' y1='0' x2='100%' y2='100%' stroke='rgba(0,0,0,0.10)' />" +
+          "<line x1='100%' y1='0' x2='0' y2='100%' stroke='rgba(0,0,0,0.10)' />" +
+          "<line x1='50%' y1='0' x2='50%' y2='100%' stroke='rgba(0,0,0,0.10)' />" +
+          "<line x1='0' y1='50%' x2='100%' y2='50%' stroke='rgba(0,0,0,0.10)' />" +
+        "</g>" +
+      "</svg>";
+    var svg = document.getElementById("main-grid");
+    if (svg){
+      svg.style.width = charSize + "px";
+      svg.style.height = charSize + "px";
+    }
+  }
+
+  // ===== One-writer engine =====
+  var idx = 0;
+  var writer = null;
+  var revealClickCount = 0;
+
+  function makeWriterForCurrent(){
+    renderMainGrid();
+    setStatusDot(true, false);
+
+    writer = HanziWriter.create("main-grid", characters[idx], {
+      width: charSize,
+      height: charSize,
+      padding: padding,
+
+      showCharacter: false,
+      showOutline: outlineEnabled,
+
+      drawingWidth: strokeWidth,
+      strokeColor: stroke_color,
+      outlineColor: outline_color,
+      drawingColor: drawing_color,
+      showHintAfterMisses: hintMiss,
+
+      onLoadCharDataSuccess: function(){ setStatusDot(true, true); },
+      onLoadCharDataError: function(){ setStatusDot(true, false); }
+    });
+
+    startQuiz();
+  }
+
+  function startQuiz(){
+    if (!writer) return;
+    if (outlineEnabled) writer.showOutline(); else writer.hideOutline();
+
+    writer.quiz({
+      onComplete: function(){
+        setTimeout(function(){
+          if (idx >= characters.length - 1){
+            setStatusDot(false, true);
+            return;
+          }
+          idx++;
+          revealClickCount = 0;
+          makeWriterForCurrent();
+        }, 650);
+      }
+    });
+  }
+
+  function resetAll(){
+    idx = 0;
+    revealClickCount = 0;
+    makeWriterForCurrent();
+  }
+
+  if (btnReload) btnReload.onclick = function(e){ e.preventDefault(); resetAll(); };
+
+  if (btnNext) btnNext.onclick = function(e){
+    e.preventDefault();
+    if (!writer) return;
+    revealClickCount = 0;
+
+    if (outlineEnabled) writer.showOutline(); else writer.hideOutline();
+    writer.showCharacter();
+
+    setTimeout(function(){
+      if (idx >= characters.length - 1){
+        setStatusDot(false, true);
+      } else {
+        idx++;
+        makeWriterForCurrent();
+      }
+    }, 650);
+  };
+
+  if (btnReveal) btnReveal.onclick = function(e){
+    e.preventDefault();
+    if (!writer) return;
+
+    if (outlineEnabled) writer.showOutline();
+
+    if (revealClickCount === 0) writer.animateCharacter();
+    else if (revealClickCount === 1) writer.showCharacter();
+    else {
+      writer.hideCharacter();
+      if (!outlineEnabled) writer.hideOutline();
+      makeWriterForCurrent();
+      revealClickCount = -1;
+    }
+    revealClickCount++;
+  };
+
+  makeWriterForCurrent();
+})();
+</script>

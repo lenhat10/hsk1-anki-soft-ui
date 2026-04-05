@@ -1,0 +1,117 @@
+<script>
+  (function(){
+    var el = document.getElementById("Deck");
+    if (el) el.innerHTML = "{{Deck}}".replace("::"," &minus; ");
+  })();
+</script>
+
+<div id="Container">
+  <div id="card">
+
+    <div class="word-chip" style="margin-bottom:6px;">
+      <div class="mini-now" id="miniNowBack"></div>
+    </div>
+
+    {{type:example}}
+    
+    {{#example_translated}}
+      <div class="example" style="margin-top:8px;">
+        <div><b>Tiếng Việt:</b> {{example_translated}}</div>
+        <div><b>Pinyin:</b> {{example_pinyin}}</div>
+      </div>
+    {{/example_translated}}
+
+    <div class="nghia" style="margin-top:6px;">
+      <div class="info-grid">
+        {{#vi_meaning}}<div><b>Nghĩa:</b> {{vi_meaning}}</div>{{/vi_meaning}}
+        {{#en_meaning}}<div><b>English:</b> {{en_meaning}}</div>{{/en_meaning}}
+        {{#pos}}<div><b>Loại từ:</b> {{pos}}</div>{{/pos}}
+      </div>
+    </div>
+
+    {{#explain}}
+      <div class="bothu" style="margin-top:6px;"><b>Giải thích:</b> {{explain}}</div>
+    {{/explain}}
+
+    <div class="audio-row" id="audioRow" style="margin-top: 10px;">
+      {{#audio_word}}
+        <button class="btn-play1" type="button" onclick="playAudioFromField('wordAudio')">
+          🔊 Word
+        </button>
+        <span id="wordAudio" style="display:none;">{{audio_word}}</span>
+      {{/audio_word}}
+      
+      {{#audio_example}}
+        <button class="btn-play-de" type="button" onclick="playAudioFromField('exAudio')">
+          🔊 Example
+        </button>
+        <span id="exAudio" style="display:none;">{{audio_example}}</span>
+      {{/audio_example}}
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ===== Audio helper (dùng chung toàn bộ thẻ) =====
+  window.playAudioFromField = function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+
+    var clickable = el.querySelector(".soundLink, .replaybutton, audio, a");
+    if (clickable) {
+      if (clickable.tagName === "AUDIO") clickable.play();
+      else clickable.click();
+      return;
+    }
+    var any = el.querySelector("*");
+    if (any) any.click();
+  };
+
+  // ===== Render mini pill WORD =====
+  (function(){
+    var raw = `{{word}}` || "";
+    // plain text + chỉ lấy chữ Hán
+    var chars = raw.replace(/<[^>]*>/g, "")
+                   .replace(/[^\u3400-\u9FFF\uF900-\uFAFF]/g, "")
+                   .trim();
+
+    var host = document.getElementById("miniNowBack");
+    if (!host) return;
+
+    host.innerHTML = "";
+    if (!chars) return;
+
+    for (var i = 0; i < chars.length; i++){
+      var span = document.createElement("span");
+      span.className = "mini-pill";
+      span.textContent = chars[i];
+      host.appendChild(span);
+    }
+  })();
+</script>
+
+<style>
+/* Gọn layout mặt sau (chỉ thêm nhẹ, không phá CSS chung) */
+.info-grid{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.audio-row{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+</style>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ <script role='smarterTypeField' src="_smarterTypeField.min2026-02-26_18-18-38.js" data-config="2026-03-28_01-39-10"></script>
